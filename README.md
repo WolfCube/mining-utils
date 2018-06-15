@@ -14,8 +14,11 @@ The script is configured with a configuration file in the folder $HOME/.rig (whi
 ## Configuration file
 
 In the configuration file each semicolon-separated line represents a miner (or any other command) that has to be run.
+
 The first value is the name of the screen window (no spaces or special character should be used, see the [screen manual](https://www.gnu.org/software/screen/manual/screen.html) for any particular limitation)
+
 The second one is the script or even just a command that will be run, it can contain spaces but no semicolon. If the user needs to use semicolon, it is better to create a script and then put that in the configuration file
+
 The last is the **enabled** value. If set to 1, the script will automatically run the command in case it stops running (it will also run it at startup), otherwise it will just ignore it. You can still run it manually though.
 
 Here's an example of configuration file
@@ -40,3 +43,19 @@ So, for example, to manually start the eth miner set before, just call in a term
 Instead of the script name, you can also use a special identifier, currently there are two:
 * all - *every script in the configuration file*
 * all-enabled - *every script that is enabled*
+
+## Automatic startup
+
+In order to automatically start all the scripts, `startup` needs to be called continously, so that it costantly monitors the active scripts and resumes them if necessary.
+
+To do that, the easiest thing is to add this line to the `rc.local` file
+
+```sh
+su - user -c "screen -dmS STARTUP watch -n 1 startup all-enabled start"
+```
+
+This will create a screen window that will call every second (with the `watch` command) the `startup` script to start every enabled script that is not yet running.
+
+To see every running script, just write in a terminal `screen -list` which will list all the screen windows that are running.
+
+To check your miner, use the command `screen -r NAME` and to detach, type CTRL-A and then D. **Do not** close the windows with CTRL-C which will terminate the windows you are connected to.

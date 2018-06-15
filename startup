@@ -1,0 +1,118 @@
+#!/bin/bash
+
+DIR="$HOME/.rig"
+LOGDIR="$DIR/logs"
+CONFIG="$DIR/startup.cfg"
+LOG="$LOGDIR/startup$(date +%Y%m%d).log"
+declare -a CFG
+
+#preliminary checks
+#if config file is empty, it is most likely because of an unexpected shutdown, thus it is recovered from previous backup
+if [[ $(cat $CONFIG) == "" ]] ; then
+	cp "$CONFIG.bak" "$CONFIG"
+fi
+
+#checks if folders exist
+if [[ ! -d "$DIR" ]] ; then
+	mkdir "$DIR"
+fi
+
+if [[ ! -d "$LOGDIR" ]] ; then
+	mkdir "$LOGDIR"
+fi
+
+function log
+{
+	echo "[$(date +%Y%m%d-%H%M%S)]: $1" >> $LOG
+}
+
+function screen-running
+{
+	if [[ $(screen -list | grep -P -e "[0-9]+\.$1") == "" ]] ; then
+		echo "false"
+	else
+		echo "true"
+	fi
+}
+
+function screen-start
+{
+	screen -dmS $1 $2
+	echo "Started screen [$1] with command \"$2\""
+	log "Started screen [$1] with command \"$2\""
+}
+
+function screen-stop
+{
+	screen -S $1 -X stuff ^C
+	echo "Screen [$1] stopped"
+	log "Screen [$1] stopped"
+}
+
+function screen-kill
+{
+	screen -S $1 -X kill
+	echo "Screen [$1] killed"
+	log "Screen [$1] killed"
+}
+
+if [[ $1 == "--help" || $1 == "-h" ]] ; then
+	echo -e "usage: startup [program] [action]"
+	echo -e "Keeps programs running and auto-respawns them if they close.\nThe program is configured with the file $CONFIG\n"
+	echo -e "[program] is the name of the process to start or a special identifier"
+	echo -e "all:\t\tevery program listed in startup.cfg"
+	echo -e "all-enabled:\tevery program that is enabled"
+	echo -e "\nCommand line options:"
+	echo -e "-h --help\tShow this help message"
+	exit 0
+fi
+
+while IFS='' read -r line || [[ -n "$line" ]] ; do
+	if [[ "$line" != "#"* ]] ; then #ignores comments
+    	IFS=';' PRG=($line)
+		unset IFS
+
+		#if $1 is the program name, do what $2 says
+		if [[ $1 == ${PRG[0]} ]] || [[ $1 == "all" ]] || [[ $1 == "all-enabled" && ${PRG[2]} == "1" ]]  ; then
+			if [[ $2 == "enable" ]] ; then
+				PRG[2]=1
+				log "Enabled [${PRG[0]}]"
+			elif [[ $2 == "disable" ]] ; then
+				PRG[2]=0
+				log "Disabled [${PRG[0]}]"
+			elif [[ $2 == "start" ]] ; then
+				if [[ "$(screen-running ${PRG[0]})" == "false" ]] ; then
+					screen-start ${PRG[0]} "${PRG[1]}"
+				else
+					echo "${PRG[0]} is already running"
+				fi
+			elif [[ $2 == "stop" ]] ; then
+				if [[ "$(screen-running ${PRG[0]})" == "false" ]] ; then
+					echo "${PRG[0]} is not running"
+				else
+					screen-stop ${PRG[0]}
+				fi
+			elif [[ $2 == "kill" ]] ; then
+				if [[ "$(screen-running ${PRG[0]})" == "false" ]] ; then
+					echo "${PRG[0]} is not running"
+				else
+					screen-stop ${PRG[0]}
+				fi
+			fi
+		fi
+
+		#udpates
+		CFG+=("${PRG[0]};${PRG[1]};${PRG[2]}")
+		IFS=''
+	else
+		CFG+=("$line")
+	fi
+done < "$CONFIG"
+
+#saves to config file
+cp $CONFIG "$CONFIG.bak"
+
+> "$CONFIG"
+for l in ${CFG[@]} ; do
+	echo "$l" >> "$CONFIG"
+done
