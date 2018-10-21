@@ -32,6 +32,7 @@ Here's an example of configuration file
 ## Manual commands
 
 This script can also be used manually. To do that, call the script with two arguments: the script name and the action. The allowed actions are:
+
 * start
 * stop
 * enable - *will set the enable value to 1*
