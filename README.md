@@ -5,9 +5,10 @@ This repository holds some useful scripts to optimize or automate mining operati
 This script is used to start mining scripts at startup and, if they fail, they can be automatically restarted.
 
 The script is configured with a configuration file in the folder $HOME/.rig (which is the root directory for any other file).
+
 * startup.cfg - *the main configuration file*
 * logs/ - *the folder where logs are stored*
-  * startupYYYYMMDD.log - *this is the format of the log files (a different one is created every day)*
+    * startupYYYYMMDD.log - *this is the format of the log files (a different one is created every day)*
 
 **NOTE:** this script needs [screen](https://www.gnu.org/software/screen/) to be installed in order to work
 
@@ -41,6 +42,7 @@ So, for example, to manually start the eth miner set before, just call in a term
     startup ETH start
 
 Instead of the script name, you can also use a special identifier, currently there are two:
+
 * all - *every script in the configuration file*
 * all-enabled - *every script that is enabled*
 
